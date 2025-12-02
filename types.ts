@@ -29,3 +29,13 @@ export interface EducationalPattern {
   type: 'Bullish' | 'Bearish' | 'Neutral';
   imageUrl: string;
 }
+
+export interface MarketData {
+  symbol: string;
+  price: number;
+  changePercent: number;
+  high: number;
+  low: number;
+  volume: number;
+  isUp: boolean;
+}
