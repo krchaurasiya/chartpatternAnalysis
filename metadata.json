@@ -1,0 +1,5 @@
+{
+  "name": "ChartPatternPro AI",
+  "description": "A professional-grade technical analysis tool that uses Gemini Vision to identify chart patterns, trends, and support/resistance levels in stock and crypto markets.",
+  "requestFramePermissions": []
+}
