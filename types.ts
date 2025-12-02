@@ -15,6 +15,7 @@ export interface ChartAnalysisResult {
   resistanceLevels: string[];
   analysis: string;
   actionableAdvice: string;
+  imageUrl?: string; // The annotated image used for analysis
 }
 
 export interface NavigationItem {
@@ -38,4 +39,12 @@ export interface MarketData {
   low: number;
   volume: number;
   isUp: boolean;
+}
+
+export type CurrencyCode = 'USD' | 'INR' | 'EUR' | 'GBP';
+
+export interface Currency {
+  code: CurrencyCode;
+  symbol: string;
+  rate: number; // Exchange rate relative to USD
 }

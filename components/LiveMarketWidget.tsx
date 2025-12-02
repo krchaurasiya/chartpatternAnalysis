@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Activity, ArrowUp, ArrowDown, Wifi, WifiOff, Search, DollarSign } from 'lucide-react';
-import { MarketData } from '../types';
+import { Activity, ArrowUp, ArrowDown, Wifi, WifiOff, Search, DollarSign, Globe } from 'lucide-react';
+import { MarketData, CurrencyCode, Currency } from '../types';
+
+const CURRENCIES: Record<CurrencyCode, Currency> = {
+  USD: { code: 'USD', symbol: '$', rate: 1 },
+  INR: { code: 'INR', symbol: '₹', rate: 84.05 },
+  EUR: { code: 'EUR', symbol: '€', rate: 0.93 },
+  GBP: { code: 'GBP', symbol: '£', rate: 0.79 },
+};
 
 const LiveMarketWidget: React.FC = () => {
   const [symbol, setSymbol] = useState('BTCUSDT');
@@ -8,6 +15,7 @@ const LiveMarketWidget: React.FC = () => {
   const [data, setData] = useState<MarketData | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [inputVal, setInputVal] = useState('BTCUSDT');
+  const [currency, setCurrency] = useState<CurrencyCode>('USD');
   
   const wsRef = useRef<WebSocket | null>(null);
   const stockIntervalRef = useRef<number | null>(null);
@@ -43,7 +51,6 @@ const LiveMarketWidget: React.FC = () => {
 
       ws.onmessage = (event) => {
         const msg = JSON.parse(event.data);
-        // Binance miniTicker payload: e: event, E: time, s: symbol, c: close, o: open, h: high, l: low, v: volume, q: quote volume
         const currentPrice = parseFloat(msg.c);
         const openPrice = parseFloat(msg.o);
         const change = ((currentPrice - openPrice) / openPrice) * 100;
@@ -61,13 +68,13 @@ const LiveMarketWidget: React.FC = () => {
 
       wsRef.current = ws;
     } else {
-      // Simulation for stocks (Mock Data)
+      // Simulation for stocks
       setIsConnected(true);
-      const basePrice = (Math.random() * 100) + 50;
+      const basePrice = (Math.random() * 500) + 50;
       let currentPrice = basePrice;
       
       const updateStock = () => {
-        const change = (Math.random() - 0.5) * 0.5; // Random volatility
+        const change = (Math.random() - 0.5) * (basePrice * 0.01); 
         currentPrice += change;
         const openPrice = basePrice;
         const percent = ((currentPrice - openPrice) / openPrice) * 100;
@@ -76,9 +83,9 @@ const LiveMarketWidget: React.FC = () => {
           symbol: sym.toUpperCase(),
           price: currentPrice,
           changePercent: percent,
-          high: currentPrice + 2,
-          low: currentPrice - 2,
-          volume: Math.floor(Math.random() * 1000000),
+          high: currentPrice * 1.02,
+          low: currentPrice * 0.98,
+          volume: Math.floor(Math.random() * 10000000),
           isUp: percent >= 0
         });
       };
@@ -93,6 +100,18 @@ const LiveMarketWidget: React.FC = () => {
     if (!inputVal.trim()) return;
     setSymbol(inputVal.toUpperCase());
     connectFeed(inputVal.toUpperCase(), mode);
+  };
+
+  const formatPrice = (price: number) => {
+    const selectedCurr = CURRENCIES[currency];
+    const convertedPrice = price * selectedCurr.rate;
+    return `${selectedCurr.symbol}${convertedPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  const formatHighLow = (price: number) => {
+    const selectedCurr = CURRENCIES[currency];
+    const convertedPrice = price * selectedCurr.rate;
+    return convertedPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   return (
@@ -114,6 +133,24 @@ const LiveMarketWidget: React.FC = () => {
                 <WifiOff className="w-3 h-3" /> Offline
               </span>
             )}
+            
+            {/* Currency Selector */}
+            <div className="relative group">
+               <button className="flex items-center gap-1 text-xs text-gray-400 hover:text-white bg-market-dark border border-market-border px-2 py-0.5 rounded transition-colors">
+                  <Globe className="w-3 h-3" /> {currency}
+               </button>
+               <div className="absolute right-0 top-full mt-1 bg-market-card border border-market-border rounded shadow-xl hidden group-hover:block z-10 w-24">
+                  {Object.values(CURRENCIES).map((c) => (
+                    <button 
+                      key={c.code}
+                      onClick={() => setCurrency(c.code)}
+                      className="block w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-white/5 hover:text-white"
+                    >
+                      {c.code} ({c.symbol})
+                    </button>
+                  ))}
+               </div>
+            </div>
           </div>
         </div>
 
@@ -129,7 +166,7 @@ const LiveMarketWidget: React.FC = () => {
               Crypto
             </button>
             <button
-              onClick={() => { setMode('STOCK'); setInputVal('AAPL'); setSymbol('AAPL'); connectFeed('AAPL', 'STOCK'); }}
+              onClick={() => { setMode('STOCK'); setInputVal('RELIANCE'); setSymbol('RELIANCE'); connectFeed('RELIANCE', 'STOCK'); }}
               className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${
                 mode === 'STOCK' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'
               }`}
@@ -143,7 +180,7 @@ const LiveMarketWidget: React.FC = () => {
               type="text"
               value={inputVal}
               onChange={(e) => setInputVal(e.target.value)}
-              placeholder={mode === 'CRYPTO' ? "Pair (e.g. ETHUSDT)" : "Ticker (e.g. TSLA)"}
+              placeholder={mode === 'CRYPTO' ? "Pair (e.g. ETHUSDT)" : "Ticker (e.g. TCS)"}
               className="w-full bg-market-dark border border-market-border rounded-lg py-2 pl-3 pr-10 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 transition-colors font-mono uppercase"
             />
             <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-500">
@@ -158,11 +195,14 @@ const LiveMarketWidget: React.FC = () => {
         {data ? (
           <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
             <div>
-              <div className="text-gray-500 text-sm font-mono mb-1">Last Price</div>
-              <div className={`text-4xl font-mono font-bold tracking-tighter flex items-center gap-2 ${
+              <div className="flex justify-between items-end mb-1">
+                 <div className="text-gray-500 text-sm font-mono">Last Price</div>
+                 <div className="text-gray-500 text-xs font-mono">{data.symbol}</div>
+              </div>
+              <div className={`text-3xl lg:text-4xl font-mono font-bold tracking-tighter flex items-center gap-2 ${
                 data.isUp ? 'text-market-green' : 'text-market-red'
               }`}>
-                {mode === 'STOCK' ? '$' : ''}{data.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatPrice(data.price)}
               </div>
             </div>
 
@@ -185,11 +225,11 @@ const LiveMarketWidget: React.FC = () => {
             <div className="grid grid-cols-2 gap-4 text-xs font-mono">
                <div className="flex justify-between border-b border-market-border pb-1">
                  <span className="text-gray-500">High</span>
-                 <span className="text-gray-300">{data.high.toLocaleString()}</span>
+                 <span className="text-gray-300">{formatHighLow(data.high)}</span>
                </div>
                <div className="flex justify-between border-b border-market-border pb-1">
                  <span className="text-gray-500">Low</span>
-                 <span className="text-gray-300">{data.low.toLocaleString()}</span>
+                 <span className="text-gray-300">{formatHighLow(data.low)}</span>
                </div>
             </div>
           </div>
@@ -203,7 +243,7 @@ const LiveMarketWidget: React.FC = () => {
       
       <div className="bg-market-dark/30 p-2 text-center border-t border-market-border">
         <p className="text-[10px] text-gray-600">
-          {mode === 'CRYPTO' ? 'Real-time data via Binance WebSocket' : 'Demo Mode: Simulated Stock Data'}
+          {mode === 'CRYPTO' ? 'Real-time via Binance WS' : 'Demo: Simulated Market Data'}
         </p>
       </div>
     </div>
