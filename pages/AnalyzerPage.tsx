@@ -1,12 +1,14 @@
+
 import React, { useState } from 'react';
 import Dropzone from '../components/Dropzone';
 import ResultCard from '../components/ResultCard';
 import LiveMarketWidget from '../components/LiveMarketWidget';
-import DailyStockList from '../components/DailyStockList';
+import DailyStockList, { STOCK_DB } from '../components/DailyStockList';
 import ChartAnnotator from '../components/ChartAnnotator';
 import { analyzeChartImage } from '../services/geminiService';
+import { generateChart } from '../services/chartGenerator';
 import { AnalysisStatus, ChartAnalysisResult } from '../types';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 
 const AnalyzerPage: React.FC = () => {
   const [status, setStatus] = useState<AnalysisStatus>(AnalysisStatus.IDLE);
@@ -14,12 +16,35 @@ const AnalyzerPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isAnnotating, setIsAnnotating] = useState(false);
+  const [isGeneratingChart, setIsGeneratingChart] = useState(false);
 
   const handleImageUploaded = (base64: string) => {
     setUploadedImage(base64);
     setIsAnnotating(true);
     setResult(null);
     setError(null);
+  };
+
+  const handleStockSelection = async (ticker: string) => {
+    setIsGeneratingChart(true);
+    
+    // Find stock details from DB to get correct price/type
+    const stock = STOCK_DB.find(s => s.ticker === ticker);
+    const price = stock ? stock.price : "100";
+    const type = stock ? stock.type : 'STOCK_IN';
+
+    try {
+      const chartBase64 = await generateChart(ticker, type, price);
+      setUploadedImage(chartBase64);
+      setIsAnnotating(true);
+      setResult(null);
+      setError(null);
+    } catch (e) {
+      console.error(e);
+      setError("Failed to load chart data.");
+    } finally {
+      setIsGeneratingChart(false);
+    }
   };
 
   const handleAnnotationConfirmed = async (finalImageBase64: string) => {
@@ -52,19 +77,28 @@ const AnalyzerPage: React.FC = () => {
             AI Technical Analysis
           </h1>
           <p className="text-lg text-gray-400">
-            Upload a chart, annotate key areas, and let our AI identify patterns and trends.
+            Upload a chart or select a stock from the list. Annotate key areas and let our AI identify patterns and trends.
           </p>
         </div>
 
         {/* View Switching Logic */}
-        {!isAnnotating && !result && status !== AnalysisStatus.ANALYZING && (
+        {isGeneratingChart && (
+          <div className="h-64 border border-market-border rounded-xl bg-market-card flex items-center justify-center">
+             <div className="text-center">
+                <Loader2 className="w-10 h-10 text-blue-500 animate-spin mx-auto mb-4" />
+                <p className="text-blue-400 font-medium">Fetching Live Chart Data...</p>
+             </div>
+          </div>
+        )}
+
+        {!isGeneratingChart && !isAnnotating && !result && status !== AnalysisStatus.ANALYZING && (
           <Dropzone 
             onImageSelected={handleImageUploaded} 
-            isLoading={status === AnalysisStatus.ANALYZING} 
+            isLoading={false} 
           />
         )}
 
-        {isAnnotating && uploadedImage && (
+        {!isGeneratingChart && isAnnotating && uploadedImage && (
           <ChartAnnotator 
             imageBase64={uploadedImage}
             onConfirm={handleAnnotationConfirmed}
@@ -103,11 +137,11 @@ const AnalyzerPage: React.FC = () => {
           </div>
         )}
         
-        {status === AnalysisStatus.IDLE && !isAnnotating && (
+        {status === AnalysisStatus.IDLE && !isAnnotating && !isGeneratingChart && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center mt-12 opacity-50">
               <div className="p-4 border border-market-border rounded-lg">
                   <div className="text-market-green font-mono text-xs mb-2">01</div>
-                  <h3 className="text-white font-medium">Annotate Chart</h3>
+                  <h3 className="text-white font-medium">Select or Upload</h3>
               </div>
               <div className="p-4 border border-market-border rounded-lg">
                   <div className="text-blue-400 font-mono text-xs mb-2">02</div>
@@ -125,7 +159,7 @@ const AnalyzerPage: React.FC = () => {
       <div className="lg:col-span-1">
         <div className="lg:sticky lg:top-24 space-y-6">
           <LiveMarketWidget />
-          <DailyStockList />
+          <DailyStockList onStockSelect={handleStockSelection} />
           
           <div className="p-4 border border-market-border rounded-xl bg-market-dark/50">
              <h4 className="text-white font-bold text-sm mb-2">Quick Tips</h4>

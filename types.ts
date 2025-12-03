@@ -15,7 +15,22 @@ export interface ChartAnalysisResult {
   resistanceLevels: string[];
   analysis: string;
   actionableAdvice: string;
-  imageUrl?: string; // The annotated image used for analysis
+  imageUrl?: string;
+}
+
+export interface RLDecision {
+  action: 'BUY' | 'SELL' | 'HOLD';
+  confidence: number; // 0-100 (Q-Value proxy)
+  rewardRiskRatio: number;
+  suggestedEntry: string;
+  stopLoss: string;
+  takeProfit: string;
+  reasoning: string;
+  detectedState: {
+    trend: string;
+    volatility: string;
+    keyLevels: string;
+  };
 }
 
 export interface NavigationItem {
@@ -31,6 +46,8 @@ export interface EducationalPattern {
   imageUrl: string;
 }
 
+export type MarketType = 'CRYPTO' | 'STOCK_IN' | 'FOREX';
+
 export interface MarketData {
   symbol: string;
   price: number;
@@ -39,6 +56,7 @@ export interface MarketData {
   low: number;
   volume: number;
   isUp: boolean;
+  type: MarketType;
 }
 
 export type CurrencyCode = 'USD' | 'INR' | 'EUR' | 'GBP';
@@ -46,5 +64,5 @@ export type CurrencyCode = 'USD' | 'INR' | 'EUR' | 'GBP';
 export interface Currency {
   code: CurrencyCode;
   symbol: string;
-  rate: number; // Exchange rate relative to USD
+  rate: number;
 }

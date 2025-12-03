@@ -1,84 +1,72 @@
-import React from 'react';
-import { Calendar, Clock, CheckCircle2, XCircle } from 'lucide-react';
 
-interface StockItem {
+import React from 'react';
+import { Calendar, Globe, TrendingUp, DollarSign, MousePointerClick } from 'lucide-react';
+import { MarketType } from '../types';
+
+export interface StockItem {
   ticker: string;
   name: string;
-  type: 'STOCK' | 'CRYPTO';
-  region: 'US' | 'IN' | 'GLOBAL';
+  type: MarketType;
+  region: 'US' | 'IN' | 'GLOBAL' | 'EU';
+  price: string;
+  change: number;
 }
 
-const STOCK_DB: StockItem[] = [
-  { ticker: 'BTC', name: 'Bitcoin', type: 'CRYPTO', region: 'GLOBAL' },
-  { ticker: 'ETH', name: 'Ethereum', type: 'CRYPTO', region: 'GLOBAL' },
-  { ticker: 'SOL', name: 'Solana', type: 'CRYPTO', region: 'GLOBAL' },
-  { ticker: 'RELIANCE', name: 'Reliance Ind.', type: 'STOCK', region: 'IN' },
-  { ticker: 'TCS', name: 'Tata Consultancy', type: 'STOCK', region: 'IN' },
-  { ticker: 'HDFCBANK', name: 'HDFC Bank', type: 'STOCK', region: 'IN' },
-  { ticker: 'INFY', name: 'Infosys', type: 'STOCK', region: 'IN' },
-  { ticker: 'AAPL', name: 'Apple Inc.', type: 'STOCK', region: 'US' },
-  { ticker: 'TSLA', name: 'Tesla Inc.', type: 'STOCK', region: 'US' },
-  { ticker: 'NVDA', name: 'Nvidia Corp.', type: 'STOCK', region: 'US' },
-  { ticker: 'MSFT', name: 'Microsoft', type: 'STOCK', region: 'US' },
+export const STOCK_DB: StockItem[] = [
+  { ticker: 'BTC/USDT', name: 'Bitcoin', type: 'CRYPTO', region: 'GLOBAL', price: '96,400', change: 2.4 },
+  { ticker: 'ETH/USDT', name: 'Ethereum', type: 'CRYPTO', region: 'GLOBAL', price: '2,650', change: -1.2 },
+  { ticker: 'RELIANCE', name: 'Reliance Ind.', type: 'STOCK_IN', region: 'IN', price: '2,980', change: 1.5 },
+  { ticker: 'TCS', name: 'Tata Consultancy', type: 'STOCK_IN', region: 'IN', price: '4,120', change: 0.8 },
+  { ticker: 'HDFCBANK', name: 'HDFC Bank', type: 'STOCK_IN', region: 'IN', price: '1,450', change: -0.5 },
+  { ticker: 'EUR/USD', name: 'Euro', type: 'FOREX', region: 'EU', price: '1.0854', change: 0.02 },
+  { ticker: 'GBP/USD', name: 'Pound', type: 'FOREX', region: 'EU', price: '1.2650', change: -0.1 },
+  { ticker: 'USD/JPY', name: 'Yen', type: 'FOREX', region: 'GLOBAL', price: '151.24', change: 0.3 },
 ];
 
-const DailyStockList: React.FC = () => {
-  const now = new Date();
-  const day = now.getDay(); // 0 = Sun, 6 = Sat
-  const isWeekend = day === 0 || day === 6;
+interface DailyStockListProps {
+  onStockSelect?: (ticker: string) => void;
+}
 
-  // Filter logic: Crypto always open. Stocks closed on weekend.
-  const tradableAssets = STOCK_DB.map(stock => {
-    let isOpen = true;
-    let status = 'Market Open';
-    
-    if (stock.type === 'STOCK' && isWeekend) {
-      isOpen = false;
-      status = 'Weekend Close';
-    }
-
-    return { ...stock, isOpen, status };
-  }).sort((a, b) => (a.isOpen === b.isOpen ? 0 : a.isOpen ? -1 : 1));
-
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
+const DailyStockList: React.FC<DailyStockListProps> = ({ onStockSelect }) => {
   return (
-    <div className="bg-market-card border border-market-border rounded-xl overflow-hidden mt-6">
+    <div className="bg-market-card border border-market-border rounded-xl overflow-hidden mt-6 flex flex-col h-full">
       <div className="p-4 border-b border-market-border bg-market-dark/50 flex justify-between items-center">
-        <div>
-           <h3 className="text-white font-bold text-sm flex items-center gap-2">
-             <Calendar className="w-4 h-4 text-blue-500" />
-             Tradable Today
-           </h3>
-           <p className="text-[10px] text-gray-400 mt-0.5">{days[day]}, {now.toLocaleDateString()}</p>
-        </div>
-        <div className={`px-2 py-1 rounded text-[10px] font-bold border ${!isWeekend ? 'border-market-green/30 text-market-green bg-market-green/10' : 'border-yellow-500/30 text-yellow-500 bg-yellow-500/10'}`}>
-           {isWeekend ? 'WEEKEND TRADING' : 'MARKETS ACTIVE'}
-        </div>
+         <h3 className="text-white font-bold text-sm flex items-center gap-2">
+           <TrendingUp className="w-4 h-4 text-blue-500" />
+           Tradable Today
+         </h3>
+         <span className="text-[10px] text-gray-500 bg-market-dark px-2 py-0.5 rounded border border-market-border flex items-center gap-1">
+            <MousePointerClick className="w-3 h-3" /> Select to Analyze
+         </span>
       </div>
 
-      <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
-        {tradableAssets.map((asset, idx) => (
-          <div key={idx} className="flex items-center justify-between p-3 border-b border-market-border hover:bg-white/5 transition-colors group">
+      <div className="flex-grow overflow-y-auto custom-scrollbar">
+        {STOCK_DB.map((asset, idx) => (
+          <div 
+            key={idx} 
+            onClick={() => onStockSelect && onStockSelect(asset.ticker)}
+            className="flex items-center justify-between p-3 border-b border-market-border hover:bg-white/5 transition-colors cursor-pointer group active:bg-blue-500/10"
+          >
             <div className="flex items-center gap-3">
-              <div className={`w-2 h-2 rounded-full ${asset.isOpen ? 'bg-market-green shadow-[0_0_8px_rgba(0,200,5,0.5)]' : 'bg-market-red'}`} />
+              <div className={`p-2 rounded-lg ${asset.change >= 0 ? 'bg-market-green/10 text-market-green' : 'bg-market-red/10 text-market-red'}`}>
+                 {asset.type === 'CRYPTO' ? <DollarSign className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
+              </div>
               <div>
-                <div className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">{asset.ticker}</div>
+                <div className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">{asset.ticker}</div>
                 <div className="text-[10px] text-gray-500">{asset.name}</div>
               </div>
             </div>
             <div className="text-right">
-               <div className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-                 asset.isOpen 
-                 ? 'border-market-green/20 text-market-green bg-market-green/5' 
-                 : 'border-market-red/20 text-market-red bg-market-red/5'
-               }`}>
-                 {asset.status}
+               <div className="text-xs font-mono font-medium text-white">{asset.price}</div>
+               <div className={`text-[10px] font-mono ${asset.change >= 0 ? 'text-market-green' : 'text-market-red'}`}>
+                 {asset.change > 0 ? '+' : ''}{asset.change}%
                </div>
-               <div className="text-[10px] text-gray-600 mt-1">{asset.region} • {asset.type}</div>
             </div>
           </div>
         ))}
+      </div>
+      <div className="p-2 text-center border-t border-market-border bg-market-dark/30">
+        <span className="text-[10px] text-gray-600">Real-time Quotes (Simulated)</span>
       </div>
     </div>
   );

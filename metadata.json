@@ -1,5 +1,5 @@
 {
-  "name": "ChartPatternPro AI",
-  "description": "A professional-grade technical analysis tool that uses Gemini Vision to identify chart patterns, trends, and support/resistance levels in stock and crypto markets.",
+  "name": "QuantumTrade AI",
+  "description": "A professional-grade trading application utilizing Reinforcement Learning (Simulated) and Computer Vision to analyze Indian Markets, Forex, and Crypto.",
   "requestFramePermissions": []
 }
